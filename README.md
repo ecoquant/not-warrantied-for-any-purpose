@@ -11,7 +11,6 @@
 ### INDEX ###
 
 * (root) README : this file
-* (directory) intraday : Code and data related to the blog post titled [What are the odds of net zero?]()
 
 ### Contribution guidelines ###
 
@@ -21,5 +20,5 @@
 
 * Jan Galkowski, bayesianlogic.1@gmail.com, 
 * [https://667-per-cm.net/about](https://667-per-cm.net/about)
-* [https://www.linkedin.com/in/deepdevelopment/](https://www.linkedin.com/in/deepdevelopment/)
+
 
