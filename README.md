@@ -4,7 +4,6 @@
 
 * Collection of source code mostly written by Jan Galkowski, but occasional scraps collected from elsewhere.
 * There is no particular organization to these files, with different pieces of code being in different subdirectories.
-* There will be an INDEX maintained below.
 * Some of this code appears in posts at:
 * [667-per-cm.net](https://667-per-cm.net), my blog
 
