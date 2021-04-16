@@ -1,0 +1,574 @@
+Linear systems of equations and their solution form the cornerstone of much Engineering and Science. <a href="http://mathworld.wolfram.com/LinearAlgebra.html">Linear algebra</a> is a paragon of Mathematics in the sense that its theory is what mathematicians try to emulate when they develop theory for many other less neat subjects.  I think Linear Algebra ought to be required mathematics for any scientist or engineer. (For example, I think Quantum Mechanics makes a lot more sense when taught in terms of <a href="http://mathworld.wolfram.com/InnerProduct.html"><em>inner products</em></a> than just some magic which drops from the sky.) Unfortunately, in many schools, it is not. <a href="https://ocw.mit.edu/courses/mathematics/18-06-linear-algebra-spring-2010/">You can learn it online</a>, and Professor Gilbert Strang's lectures and books are <em>the best</em>. (I actually prefer <a href="https://www.sciencedirect.com/science/book/9780126736601">the second edition of his <em>Linear Algebra and Its Applications</em></a>, but I confess I haven't looked at the fourth edition of the text, just the third, and I haven't looked at his fifth edition of <a href="http://math.mit.edu/~gs/linearalgebra/">Introduction to Linear Algebra</a>.) 
+
+There's a lot to learn about numerical methods for linear systems, too, and Strang's <em>Applications</em> teaches a lot that's very good there, including <a href="http://mathworld.wolfram.com/SingularValueDecomposition.html">the SVD</a> of which Professor Strang writes ``it is not nearly as famous as it should be.'' I very much agree.  You'll see it usable <em>everywhere</em>, from dealing with some of the linear systems I'll mention below to support for Principal Components Analysis in Statistics, to <a href="http://tenaya.ucsd.edu/~dettinge/co2.pdf">singular-spectrum analysis of time series</a>, to <a href="https://en.wikipedia.org/wiki/Recommender_system">Recommender Systems</a>, a keystone algorithm in so-called Machine Learning work. 
+
+The study of numerical linear algebra is widespread and taught in several excellent books.  My favorites are Golub and Van Loan's <a href="http://bookstore.siam.org/jh01/?page_context=category&amp;faceted_search=0"><em>Matrix Computations</em></a>, Bj&ouml;rck's <a href="https://epubs.siam.org/doi/book/10.1137/1.9781611971484"><em>Numerical Methods for Least Squares Problems</em></a>, and Trefethen and Bau's <a href="http://bookstore.siam.org/ot50/"><em>Numerical Linear Algebra</em></a>. But it's interesting how fragile these solution methods are, and how quickly one needs to appeal to Calculus directly with but small changes in these problems.  That's what this post is about.
+
+So what am I talking about?   I'll use small systems of linear equations as examples, despite it being entirely possible and even common to work with systems which have thousands or millions of variables and equations. Here's a <a href="https://people.ucsc.edu/~dgbonett/docs/psyc214b/Matrix.pdf">basic one</a>:
+
+$latex (1)\,\,\,\left[ \begin{array} {c} b_{1} \\ b_{2} \\ b_{3} \end{array} \right] = \left[ \begin{array} {ccc} a_{11} &amp; a_{12} &amp; a_{13} \\ a_{21} &amp; a_{22} &amp; a_{23} \\ a_{31} &amp; a_{32} &amp; a_{33} \end{array} \right] \left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right]&amp;s=2$
+
+written for brevity
+
+$latex (2)\,\,\,\mathbf{b} = \mathbf{A} \mathbf{x}&amp;s=2 $
+
+Of course, in any application the equation looks more like:
+
+$latex (3)\,\,\,\left[ \begin{array} {c} 12 \\ 4 \\ 16 \end{array} \right] = \left[ \begin{array} {ccc} 1 &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; 4 \\ 3 &amp; 4 &amp; 1 \end{array} \right] \left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right]&amp;s=2$
+
+In <a href="https://www.r-project.org/"><b>R</b></a> or <a href="https://www.mathworks.com/products/matlab.html">MATLAB</a> the result is easily obtained. I work and <a href="https://en.wikipedia.org/wiki/Technology_evangelist">evangelize</a> <b>R</b>, so any computation here will be recorded in it. Doing
+<code>
+<span style="font-size:large;">
+solve(A,b)
+</span>
+</code>
+</span>
+or 
+<code>
+<span style="font-size:large;">
+lm(b ~ A + 0)
+</span>
+</code>
+will produce
+
+$latex (4)\,\,\,\left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right] = \left[ \begin{array} {c} -3 \\ 6 \\ 1 \end{array} \right]&amp;s=2$
+
+It's also possible to solve several at once, for example, from:
+
+$latex (5)\,\,\,\left[ \begin{array} {cccc} 12 &amp; 20 &amp; 101 &amp; 200 \\ 4 &amp; 11 &amp; -1 &amp; 3 \\ 16 &amp; 99 &amp; 10 &amp; 9 \end{array} \right] = \left[ \begin{array} {ccc} 1 &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; 4 \\ 3 &amp; 4 &amp; 1 \end{array} \right] \left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right]&amp;s=2$
+
+$latex (6)\,\,\,\left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right] = \left[ \begin{array} {c} -3 \\ 6 \\ 1 \end{array} \right], \left[ \begin{array} {c} 15.25 \\ 15.50 \\ -8.75 \end{array} \right], \left[ \begin{array} {c} -73.75 \\ 51.90 \\ 23.65 \end{array} \right], \left[ \begin{array} {c} -146.25 \\ 99.70 \\ 48.95 \end{array} \right]&amp;s=2 $
+
+And, of course, having an unknown $latex \mathbf{b}&amp;s=2$ but a known $latex \mathbf{x}&amp;s=2$ is direct, just using matrix multiplication:
+
+$latex (7)\,\,\,\left[ \begin{array} {c} b_{1} \\ b_{2} \\ b_{3} \end{array} \right] = \left[ \begin{array} {ccc} 1 &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; 4 \\ 3 &amp; 4 &amp; 1 \end{array} \right] \left[ \begin{array} {c} -73.75 \\ 51.90 \\ 23.65 \end{array} \right]&amp;s=2$
+
+yielding:
+
+$latex (8)\,\,\,\left[ \begin{array} {c} b_{1} \\ b_{2} \\ b_{3} \end{array} \right] = \left[ \begin{array} {c} -101 \\ -1 \\ 10 \end{array} \right]&amp;s=2$
+
+Linear Algebra gives us sensible ways to interpret inconsistent systems like:
+
+$latex (9)\,\,\,\left[ \begin{array} {c} 12 \\ 4 \\ 16 \\ 23 \end{array} \right] = \left[ \begin{array} {ccc} 1 &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; 4 \\ 3 &amp; 4 &amp; 1 \\ 
+ 17 &amp; -2 &amp; 11 \end{array} \right] \left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right]&amp;s=2$
+
+by making reasonable assumptions about what the solution to such a system should mean. <b>R</b> via <code>lm(.)</code> gives:
+
+$latex (10)\,\,\,\left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right] = \left[ \begin{array} {c} 1.46655646 \\ 3.00534079  \\ 0.34193795 \end{array} \right]&amp;s=2$
+
+Sets of solutions to things like 
+
+$latex (11)\,\,\,\left[ \begin{array} {c} 12 \\ 4 \end{array} \right] = \left[ \begin{array} {ccc} 1 &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; 4 \end{array} \right] \left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right]&amp;s=2$
+
+can be countenanced and there is even a way which I'll talk about below for picking out a unique one: the <em>minimum norm</em> solution.  This is where the SVD comes in. To learn about all the ways these things can be thought about and done, I recommend:
+
+D. D. Jackson, ``<a href="https://academic.oup.com/gji/article/28/2/97/882481">Interpretation of inaccurate, insufficient and inconsistent data</a>'', <em>Geophysical Journal International</em>, 1972, 28(2), 97-109.
+
+<span style="font-size:small;">(That's an <em><b>awesome</b></em> title for a paper, by the way.)</span>
+
+<br>
+<h3><b>What if there are holes?</b></h3>
+
+Going back to (3), however, suppose instead it looks something like this:
+
+$latex (12)\,\,\,\left[ \begin{array} {c} 12 \\ 4 \\ 16 \end{array} \right] = \left[ \begin{array} {ccc} 1 &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; a_{23} \\ 3 &amp; 4 &amp; 1 \end{array} \right] \left[ \begin{array} {c} -3 \\ 6 \\ 1 \end{array} \right]&amp;s=2$
+
+and we don't know <em>what</em> $latex a_{23}&amp;s=2$ is.  Can it be calculated?  
+
+Well, it <em>has</em> to be able to be calculated: It's the only unknown in this system, with the rules of matrix multiplication just being a shorthand for combining things. So, it's entirely correct to think that the constants could be manipulated algebraically so they all show up on one side of equals, and $latex a_{23}&amp;s=2$ on the other. That's a lot of algebra, though.
+
+We might <em>guess</em> that $latex \mathbf{A}&amp;s=2$ was symmetric so think $latex a_{23} = 4&amp;s=2$. But what about the following case, in (12)?
+
+$latex (12)\,\,\,\left[ \begin{array} {c} 12 \\ 4 \\ 16 \end{array} \right] = \left[ \begin{array} {ccc} a_{11} &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; a_{23} \\ a_{31} &amp; a_{23} &amp; 1 \end{array} \right] \left[ \begin{array} {c} -3 \\ 6 \\ 1 \end{array} \right]&amp;s=2$
+
+Now there are 3 unknowns, $latex a_{11}&amp;s=2$, $latex a_{23}&amp;s=2$, and $latex a_{31}&amp;s=2$. The answer is available in (3), but suppose that wasn't known?
+
+This problem is one of finding those parameters, <em>searching</em> for them if you like. To search, it helps to have a measure of how far away from a goal one is, that is, some kind of score.  (14) is what I propose as a score, obtained by taking (12) and rewriting it as below, (13):
+
+$latex (13)\,\,\,0 = \left[ \begin{array} {c} 12 \\ 4 \\ 16 \end{array} \right] - \left[ \begin{array} {ccc} a_{11} &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; a_{23} \\ a_{31} &amp; a_{23} &amp; 1 \end{array} \right] \left[ \begin{array} {c} -3 \\ 6 \\ 1 \end{array} \right]&amp;s=2$
+
+$latex (14)\,\,\,\left|\left|\left[ \begin{array} {c} 12 \\ 4 \\ 16 \end{array} \right] - \left[ \begin{array} {ccc} a_{11} &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; a_{23} \\ a_{31} &amp; a_{23} &amp; 1 \end{array} \right] \left[ \begin{array} {c} -3 \\ 6 \\ 1 \end{array} \right]\right|\right|_{2}&amp;s=2$
+
+$latex (15)\,\,\,||\mathbf{z}||_{2}&amp;s=2$ is an $latex L_{2}&amp;s=2$ norm, and $latex ||\mathbf{z}||_{2} = \sqrt{(\sum_{i=1}^{n} z_{i}^2)}&amp;s=2$.
+
+In other words, $latex ||\mathbf{z}||_{2}&amp;s=2$ is the length of the vector $latex \mathbf{z}&amp;s=2$. It's non-negative. Accordingly, making (14) as small as possible means pushing the left and right sides of (13) towards each other. When (14) is zero the left and right sides are equal.
+
+Now, there are many possible values for $latex a_{11}&amp;s=2$, $latex a_{23}&amp;s=2$, and $latex a_{31}&amp;s=2$. In most applications, considering all <a href="https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node189.html"><em>flonum</em></a> values for these is not necessary. Typically, the application suggests a reasonable range for each of them, from a <em>low</em> value to a <em>high</em> value. Let 
+
+$latex (\alpha_{11}, \beta_{11})&amp;s=2$ 
+
+be the range of values for $latex a_{11}&amp;s=2$, 
+
+$latex (\alpha_{23}, \beta_{23})&amp;s=2$ 
+
+be the range of values for $latex a_{23}&amp;s=2$, and 
+
+$latex (\alpha_{31}, \beta_{31})&amp;s=2$ 
+
+be the range of values for $latex a_{31}&amp;s=2$, each dictated by the application. If $latex \sigma_{11}&amp;s=2$, $latex \sigma_{23}&amp;s=2$, and $latex \sigma_{31}&amp;s=2$ are each randomly but independently chosen from the unit interval, then a particular value of (14) can be expressed
+
+$latex (16)\,\,\,\left|\left|\left[ \begin{array} {c} 12 \\ 4 \\ 16 \end{array} \right] - \left[ \begin{array} {ccc} r(\sigma_{11}, \alpha_{11}, \beta_{11}) &amp; 2 &amp; 3 \\ 2 &amp; 1 &amp; r(\sigma_{23}, \alpha_{23}, \beta_{23}) \\ r(\sigma_{31}, \alpha_{31}, \beta_{31}) &amp; r(\sigma_{23}, \alpha_{23}, \beta_{23}) &amp; 1 \end{array} \right] \left[ \begin{array} {c} -3 \\ 6 \\ 1 \end{array} \right]\right|\right|_{2}$
+
+where
+
+$latex (17)\,\,\,r(\sigma, v_{\text{low}}, v_{\text{high}}) \triangleq v_{low}(1 - \sigma) + \sigma v_{\text{high}}&amp;s=2$
+
+So, this is an <a href="https://en.wikipedia.org/wiki/Optimization_problem"><em>optimization problem</em></a> where what's wanted is to make (16) as small as possible, searching among triplets of values for $latex a_{11}&amp;s=2$, $latex a_{23}&amp;s=2$, and $latex a_{31}&amp;s=2$. How does that get done? <b>R</b> <a href="https://cran.r-project.org/package=nloptr">package <b><font size="+1"><font face="consolas">nloptr</font></font></b></a>. This is a package <a href="https://cran.r-project.org/">from <em>CRAN</em></a> which does a rich set of numerical nonlinear optimizations, allowing the user to choose the algorithm and other controls, like ranges of search and <em>constraints</em> upon the control parameters. 
+
+Another reason why these techniques are interesting is it is intriguing <em>and fun</em> to see how far one can get knowing very little. And when little is known, letting algorithms run for a while to make up for that ignorance doesn't seem like such a bad trade.
+
+<br>
+<h3><b>An illustration</b></h3>
+
+In order to illustrate the <em>I don't know much</em> case, I'm opting for:
+
+$latex \alpha_{11} = -2&amp;s=2$
+$latex \beta_{11} = 2&amp;s=2$
+$latex \alpha_{23} = -1&amp;s=2$
+$latex \beta_{23} = 8&amp;s=2$
+$latex \alpha_{31} = -6&amp;s=2$
+$latex \beta_{31} = 6&amp;s=2$
+
+What a run produces is:
+<code>
+Call:
+nloptr(x0 = rep(0.5, 3), eval_f = objective1, lb = rep(0, 3),     ub = rep(1, 3), opts = nloptr.options1, alpha.beta = alpha.beta)
+
+Minimization using NLopt version 2.4.2 
+
+NLopt solver status: 5 ( NLOPT_MAXEVAL_REACHED: Optimization stopped because maxeval (above) was reached. )
+
+Number of Iterations....: 100000 
+Termination conditions:  xtol_rel: 1e-04        maxeval: 1e+05 
+Number of inequality constraints:  0 
+Number of equality constraints:    0 
+Current value of objective function:  0.000734026668840609 
+Current value of controls: 0.74997066329 0.5556247383 0.75010835335
+
+
+<b>Y1 resulting estimates for $latex a_{11}&amp;s=1$, $latex a_{23}&amp;s=1$, and $latex a_{31}&amp;s=1$ are: 1.00, 4.00,  3</b>
+</code>
+
+That's <font face="consolas">nloptr</font>-speak for reporting on the call, the termination conditions and result. The bottom line in bold tells what was expected, that $latex a_{11} = 1, a_{23} = 4, a_{31} = 3&amp;s=2$.
+
+What about the code? The pertinent portion is shown below, and all the code is <a href="https://goo.gl/Fiydio">downloadable as a single <b>R</b> script from here</a>. There's also a <a href="https://goo.gl/Spf9n7">trace of the execution of that script available as well</a>.
+
+<code>
+L2norm&lt;- function(x)
+{
+  sqrt( sum(x*x) )
+}
+
+r&lt;- function(sigma, alpha, beta)
+{
+  stopifnot( (0 &lt;= sigma) &amp;&amp; (sigma &lt;= 1) )
+  stopifnot( alpha &lt; beta )
+  alpha*(1 - sigma) + beta*sigma
+}
+
+# Recall original was:
+#
+# A&lt;- matrix(c(1, 2, 3, 2, 1, 4, 3, 4, 1), 3, 3, byrow=TRUE)
+
+
+P1.func&lt;- function(x, alpha.beta)
+{
+  stopifnot( is.vector(x) )
+  stopifnot( 3 == length(x) )
+  #
+  sigma11&lt;- x[1]
+  sigma23&lt;- x[2]
+  sigma31&lt;- x[3]
+  alpha11&lt;- alpha.beta[1]
+  beta11&lt;- alpha.beta[2]
+  alpha23&lt;- alpha.beta[3]
+  beta23&lt;- alpha.beta[4]
+  alpha31&lt;- alpha.beta[5]
+  beta31&lt;- alpha.beta[6]
+  #
+  P1&lt;- matrix( c( r(sigma11,alpha11,beta11),  2,                          3,
+                  2,                          1,                          r(sigma23,alpha23,beta23),
+                  r(sigma31,alpha31,beta31),  r(sigma23,alpha23,beta23),  1
+                ),
+              nrow=3, ncol=3, byrow=TRUE )
+  return(P1)
+}
+
+
+objective1&lt;- function(x, alpha.beta)
+{
+  stopifnot( is.vector(x) )
+  stopifnot( 3 == length(x) )
+  b&lt;- matrix(c(12,4,16),3,1)
+  x.right&lt;- matrix(c(-3,6,1),3,1)
+  P1&lt;- P1.func(x, alpha.beta)
+  d&lt;- b - P1 %*% x.right
+  # L2 norm
+  return( L2norm(d) )
+}
+
+nloptr.options1&lt;- list(&quot;algorithm&quot;=&quot;NLOPT_GN_ISRES&quot;, &quot;xtol_rel&quot;=1.0e-6, &quot;print_level&quot;=0, &quot;maxeval&quot;=100000, &quot;population&quot;=1000)
+
+alpha.beta&lt;- c(-2, 2, -1, 8, -6, 6)
+
+Y1&lt;- nloptr(x0=rep(0.5,3), 
+            eval_f=objective1,
+            lb=rep(0,3), ub=rep(1,3),
+            opts=nloptr.options1,
+            alpha.beta=alpha.beta
+          )
+          
+print(Y1)
+          
+cat(sprintf(&quot;Y1 resulting estimates for a_{11}, a_{23}, and a_{31} are: %.2f, %.2f, %2.f\n&quot;, 
+            r(Y1$solution[1], alpha.beta[1], alpha.beta[2]), r(Y1$solution[2], alpha.beta[3], alpha.beta[4]), 
+            r(Y1$solution[3], alpha.beta[5], alpha.beta[6])))
+            
+</code>
+
+<br>
+<h3><b>But what is it good for? Case 1: Markov chain transition matrices</b></h3>
+
+Consider again (1):
+
+$latex (1')\,\,\,\left[ \begin{array} {c} b_{1} \\ b_{2} \\ b_{3} \end{array} \right] = \left[ \begin{array} {ccc} a_{11} &amp; a_{12} &amp; a_{13} \\ a_{21} &amp; a_{22} &amp; a_{23} \\ a_{31} &amp; a_{32} &amp; a_{33} \end{array} \right] \left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right]&amp;s=2$
+
+This happens also to be the template for a 3-state <a href="https://en.wikipedia.org/wiki/Markov_chain"><em>Markov chain</em></a> with their <a href="https://en.wikipedia.org/wiki/Markov_chain#Applications">many applications</a>.  
+
+The following example is taken from the famous paper by Rabiner, as presented by Resch:
+<ul>
+<li>L. R. Rabiner, ``<a href="https://ieeexplore.ieee.org/abstract/document/18626/">A tutorial on Hidden Markov Models and selected applications in speech recognition</a>'', <em>Proceedings of the IEEE</em>,  February 1989, 77(2), DOI:10.1109/5.18626.</li>
+<li>B. Resch, ``<a href="http://www.iitg.ac.in/samudravijaya/tutorials/hmmTutorialBarbaraExercises.pdf">Hidden Markov Models</a>'', notes for the course <a href="https://www.spsc.tugraz.at/courses/computational-intelligence"><em>Computational Intelligence</em></a>, Graz University of Technology, 2011.</li>
+
+<br>
+They begin with the transition diagram:
+
+<a href="https://hypergeometric.files.wordpress.com/2018/06/reschhmms-tutorial.jpg"><img src="https://hypergeometric.files.wordpress.com/2018/06/reschhmms-tutorial.jpg" alt="" width="640" height="539" class="aligncenter size-full wp-image-8620" /></a>
+
+which if cast into the form of (1') and (2) looks like:
+
+$latex (18)\,\,\,\left[ \begin{array} {c} b_{1} \\ b_{2} \\ b_{3} \end{array} \right] = \left[ \begin{array} {ccc} 0.8 &amp; 0.05 &amp; 0.15 \\ 0.2 &amp; 0.6  &amp; 0.2 \\ 0.2 &amp; 0.3 &amp; 0.5 \end{array} \right] \left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right]&amp;s=2$
+
+The rows, top-to-bottom, are labeled <em>sunny</em>, <em>rainy</em>, and <em>foggy</em>, as are the columns, left-to-right. Cell $latex (i,j)&amp;s=2$ gives the probability for going from state $latex i&amp;s=2$ to state $latex j&amp;s=2$. For example, the probability of going from <em>sunny</em> to <em>foggy</em> is 0.15. Here's a prettier rendition from Resch:
+
+<a href="https://hypergeometric.files.wordpress.com/2018/06/reschmatrix.jpg"><img src="https://hypergeometric.files.wordpress.com/2018/06/reschmatrix.jpg" alt="" width="571" height="256" class="aligncenter size-full wp-image-8623" /></a>
+
+
+Resch and Rabiner go on to teach <em>Hidden Markov Models</em> (``HMMs'') where $latex \mathbf{A}&amp;s=2$ is not known and, moreover, the weather is not directly observed.  Instead, information about the weather is obtained by observing whether or not a third party takes an umbrella to work or not. Here, however, suppose the weather <em>is</em> directly known. And suppose $latex \mathbf{A}&amp;s=2$ is known except nothing is known about what happens after <em>foggy</em>except when it remains <em>foggy</em>. Symbolically:
+
+$latex (19)\,\,\,\left[ \begin{array} {c} b_{1} \\ b_{2} \\ b_{3} \end{array} \right] = \left[ \begin{array} {ccc} 0.8 &amp; 0.05 &amp; 0.15 \\ 0.2 &amp; 0.6  &amp; 0.2 \\ a_{31} &amp; a_{32} &amp; 0.5 \end{array} \right] \left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right]&amp;s=2$
+
+Note in (18) or Resch's tableau how the rows each sum to one. This is a characteristic of first order Markov models: Once in a state, the transition has to go <em>somewhere</em>, even if to stay in that state. Transitions can't just cause the system to disappear, so all the outgoing probabilities need to sum to one. This means, however, that when what happens when it is <em>foggy</em> is introduced, there aren't two unconstrained parameters, there is only one. Accordingly, rather than introducing $latex a_{32}&amp;s=2$, I could write $latex 1 - a_{31}&amp;s=2$. As it turns out, in my experience with <font face="consolas">nloptr</font>, it is often better to specify this constraint explicitly so the optimizer
+knows about it rather than building it implicitly into the objective function, even at the price of introducing another parameter and its space to explore. 
+
+The challenge I'll pose here is somewhat tougher than that faced by HMMs. The data in hand is not a series of <em>sunny</em>, <em>rainy</em>, or <em>foggy</em> weather records but, because, say, the records were jumbled, all that's in hand is a <em>count</em> of how many <em>sunny</em>, <em>rainy</em>, and <em>foggy</em> days there were, and what the count of days were following them. In particular:
+
+$latex (20)\,\,\,\left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right] = \left[ \begin{array} {c} 1020 \\ 301 \\ 155 \end{array} \right]&amp;s=2$
+
+meaning that the first day of a set of pairs began where the first day was <em>sunny</em> 1020 times, <em>rainy</em> 301 times, and <em>foggy</em> 155 times. Statistical spidey sense wonders about how many observations are needed to pin town transition probabilities well, but let's set that aside for now. (At least it's plausible that if ordering information is given up, there might be a need for more count information.) <em>And</em> the count of what the weather was on the second days is:
+
+$latex (21)\,\,\,\left[ \begin{array} {c} b_{1} \\ b_{2} \\ b_{3} \end{array} \right] = \left[ \begin{array} {c} 854 \\ 416 \\ 372 \end{array} \right]&amp;s=2$
+
+or 854 <em>sunny</em> days, 416  <em>rainy</em> days, and 372 <em>foggy</em> foggy days.
+
+Note that unlike in (16) here in (19) there is no need to pick upper and lower bounds on the value: This is a probability so it is by definition limited to the unit interval. <em>But</em> $latex a_{31} + a_{32} + 0.5 = 1&amp;s=2$ always so <em>that</em> constraint needs to be stated.
+
+Here's the code:
+<code>
+P2.func&lt;- function(x)
+{
+  # Sunny, Rainy, Foggy
+  stopifnot( is.vector(x) )
+  stopifnot( 2 == length(x) )
+  #
+  a.31&lt;- x[1]
+  a.32&lt;- x[2]
+  #
+  P2&lt;- matrix( c( 0.8,  0.05, 0.15,
+                  0.2,  0.6,  0.2,
+                  a.31, a.32, 0.5 
+                ),
+              nrow=3, ncol=3, byrow=TRUE )
+  return(P2)
+}
+
+objective2&lt;- function(x)
+{
+  stopifnot( is.vector(x) )
+  stopifnot( 2 == length(x) )
+  x.right&lt;- matrix(c(1020, 301, 155), 3, 1)
+  b&lt;- matrix(c(854, 416, 372),3,1)
+  P2&lt;- P2.func(x)
+  d&lt;- b - P2 %*% x.right
+  # L2 norm
+  return( L2norm(d) )
+}
+
+constraint2&lt;- function(x)
+{
+  return( (x[1] + x[2] - 0.5 ))
+}
+
+nloptr.options2&lt;- list(&quot;algorithm&quot;=&quot;NLOPT_GN_ISRES&quot;, &quot;xtol_rel&quot;=1.0e-4, &quot;print_level&quot;=0, &quot;maxeval&quot;=100000, &quot;population&quot;=1000)
+
+Y2&lt;- nloptr(x0=rep(0.5,2), 
+            eval_f=objective2,
+            eval_g_eq=constraint2,
+            lb=rep(0,2), ub=rep(1,2),
+            opts=nloptr.options2
+          )
+          
+print(Y2)
+          
+cat(sprintf(&quot;Y2 resulting estimates for a_{31}, a_{32} are: %.2f, %.2f\n&quot;, 
+            Y2$solution[1], Y2$solution[2]))
+            
+
+</code>
+
+This run results in:
+
+<code>
+Call:
+nloptr(x0 = rep(0.5, 2), eval_f = objective2, lb = rep(0, 2),     ub = rep(1, 2), eval_g_eq = constraint2, opts = nloptr.options2)
+
+
+Minimization using NLopt version 2.4.2 
+
+NLopt solver status: 5 ( NLOPT_MAXEVAL_REACHED: Optimization stopped because maxeval (above) was reached. )
+
+Number of Iterations....: 100000 
+Termination conditions:  xtol_rel: 1e-04        maxeval: 1e+05 
+Number of inequality constraints:  0 
+Number of equality constraints:    1 
+Current value of objective function:  0.500013288564363 
+Current value of controls: 0.20027284199 0.29972776012
+
+
+Y2 resulting estimates for $latex a_{31}, a_{32}&amp;s=1$ are: 0.20, 0.30
+</code>
+
+Suppose some of the data is missing?  In particular, suppose instead:
+
+$latex (20a)\,\,\,\left[ \begin{array} {c} x_{1} \\ x_{2} \\ x_{3} \end{array} \right] = \left[ \begin{array} {c} 1020 \\ r(\eta, 155, 1020) \\ 155 \end{array} \right]&amp;s=2$
+
+where $latex \eta&amp;s=2$ is on the unit interval and so all that's known is that $latex x_{2}&amp;s=2$ is between 155 and 1020, that is, bounded by the other two terms in $latex \mathbf{x}&amp;s=2$.
+
+Now there are two parameters to search, but they are unconstrained, apart from being on the unit interval. The code for this is:
+
+<code>
+P3.func&lt;- function(x)
+{
+  # Sunny, Rainy, Foggy
+  stopifnot( is.vector(x) )
+  stopifnot( 3 == length(x) )
+  #
+  a.31&lt;- x[1]
+  a.32&lt;- x[2]
+  # There&#039;s an x[3] but it isn&#039;t used in the P3.func. See
+  # the objective3.
+  #
+  P3&lt;- matrix( c( 0.8,  0.05, 0.15,
+                  0.2,  0.6,  0.2,
+                  a.31, a.32, 0.5 
+                ),
+              nrow=3, ncol=3, byrow=TRUE )
+  return(P3)
+}
+
+objective3&lt;- function(x)
+{
+  stopifnot( is.vector(x) )
+  stopifnot( 3 == length(x) )
+  x.right&lt;- matrix(c(1020, r(x[3], 155, 1020), 155), 3, 1)
+  b&lt;- matrix(c(854, 416, 372),3,1)
+  P3&lt;- P3.func(x)
+  d&lt;- b - P3 %*% x.right
+  # L2 norm 
+  return( L2norm(d) )
+}
+
+constraint3&lt;- function(x)
+{
+  stopifnot( 3 == length(x) )
+  return( (x[1] + x[2] - 0.5 ))
+}
+
+nloptr.options3&lt;- list(&quot;algorithm&quot;=&quot;NLOPT_GN_ISRES&quot;, &quot;xtol_rel&quot;=1.0e-4, &quot;print_level&quot;=0, &quot;maxeval&quot;=100000, &quot;population&quot;=1000)
+
+Y3&lt;- nloptr(x0=rep(0.5,3), 
+            eval_f=objective3,
+            eval_g_eq=constraint3,
+            lb=rep(0,3), ub=rep(1,3),
+            opts=nloptr.options3
+          )
+          
+print(Y3)
+          
+cat(sprintf(&quot;Y3 resulting estimates for a_{31}, a_{32}, and eta are: %.2f, %.2f, %.2f\n&quot;, 
+            Y3$solution[1], Y3$solution[2], Y3$solution[3]))
+</code>
+
+The results are:
+
+<code>
+Call:
+nloptr(x0 = rep(0.5, 3), eval_f = objective3, lb = rep(0, 3),     ub = rep(1, 3), eval_g_eq = constraint3, opts = nloptr.options3)
+
+
+Minimization using NLopt version 2.4.2 
+
+NLopt solver status: 5 ( NLOPT_MAXEVAL_REACHED: Optimization stopped because maxeval (above) was reached. )
+
+Number of Iterations....: 100000 
+Termination conditions:  xtol_rel: 1e-04        maxeval: 1e+05 
+Number of inequality constraints:  0 
+Number of equality constraints:    1 
+Current value of objective function:  0.639962390444759 
+Current value of controls: 0.20055501795 0.29944464945 0.16847867543
+
+
+Y3 resulting estimates for a_{31}, a_{32}, and $latex \eta&amp;s=1$ are: 0.20, 0.30, 0.17, with that $latex \eta&amp;s=1$ corresponding to <b>301</b>
+
+</code>
+
+That 301 versus the true 372 isn't too bad.
+
+An example of where this kind of estimation is done more generally, see:
+<ul>
+<li>N. J. Welton, A. E. Ades, ``<a href="http://journals.sagepub.com/doi/abs/10.1177/0272989x05282637">Estimation of Markov Chain transition probabilities and rates from fully and partially observed data: Uncertainty propagation, evidence synthesis, and model calibration</a>'', <em>Medical Decision Making</em>, 2005, 25(6), 633-645.</li> 
+</ul>
+
+<br>
+<h3><b>But what is it good for? Case 2: Learning prediction matrices</b></h3>
+
+When systems like (2) arise in cases of <a href="https://en.wikipedia.org/wiki/Regression_analysis">statistical regression</a>, the matrix $latex \mathbf{A}&amp;s=2$ is called a <em>prediction</em> or <em>design matrix</em>. The idea is that its columns represent sequences of predictions for the <em>response</em>, represented by the column vector $latex \mathbf{b}&amp;s=2$, and the purpose of regression is to find the best weights, represented by column vector $latex \mathbf{x}&amp;s=2$, for predicting the response. 
+
+Consider (2) again but instead of $latex \mathbf{b}&amp;s=2$ and $latex \mathbf{x}&amp;s=2$ being column vectors, as in (5), they are matrices, $latex \mathbf{B}&amp;s=2$ and $latex \mathbf{X}&amp;s=2$, respectively.  In other words, the situation is that there are lots of $latex (\mathbf{b}_{k}, \mathbf{x}_{l})&amp;s=2$ pairs available.  And then suppose <em>nothing</em> is known about $latex \mathbf{A}&amp;s=2$, that is, it just contains nine unknown parameters:
+
+$latex (22)\,\,\,\mathbf{A} = \left[ \begin{array} {ccc} a_{11} &amp; a_{12} &amp; a_{13} \\ a_{21} &amp; a_{22} &amp; a_{23} \\ a_{31} &amp; a_{32} &amp; a_{33} \end{array} \right] &amp;s=2$
+
+There are, of course, questions about how many $latex (\mathbf{b}_{k}, \mathbf{x}_{l})&amp;s=2$ pairs are needed in tandem with choice of number of iterations (see <font face="consolas">maxeval</font> discussion in <em>Miscellaneous Notes</em> below.) Here, 8 pairs were used for purposes of illustration. 
+
+$latex (23)\,\,\,\mathbf{X} = \left[\begin{array}{cccccccc} 
+1356 &amp; 7505 &amp; 4299 &amp; 3419 &amp; 7132 &amp; 1965 &amp; 8365 &amp; 8031 \\ 
+5689 &amp; 8065 &amp; 7001 &amp; 638  &amp; 8977 &amp; 1088 &amp; 3229 &amp; 1016 \\ 
+3777 &amp; 8135 &amp; 3689 &amp; 1993 &amp; 3635 &amp; 9776 &amp; 8967 &amp; 7039 
+\end{array} 
+\right] &amp;s=1
+$
+
+and
+
+$latex (24)\,\,\,\mathbf{B} = \left[\begin{array}{cccccccc} 
+5215 &amp; 13693 &amp; 7265 &amp;  4217 &amp;  9367 &amp; 10588 &amp; 14372 &amp; 12043 \\
+7528 &amp; 17825 &amp; 11024 &amp; 4989 &amp; 14860 &amp;  9447 &amp; 16162 &amp; 13087 \\ 
+6161 &amp; 12798 &amp; 7702 &amp; 3023  &amp;  9551 &amp;  8908 &amp; 11429 &amp;  8734 
+\end{array} 
+\right] &amp;s=1
+$
+
+The code for this case is:
+
+<code>
+
+objective4&lt;- function(x)
+{
+  stopifnot( is.vector(x) )
+  stopifnot( 9 == length(x) )
+  B&lt;- matrix(c(5215, 13693,  7265, 4217, 9367, 10588, 14372, 12043,
+               7528, 17825, 11024, 4989, 14860, 9447, 16162, 13087,
+               6161, 12798,  7702, 3023,  9551, 8908, 11429,  8734
+              ), 3, 8, byrow=TRUE)
+  X.right&lt;- matrix(c(1356, 7505, 4299, 3419, 7132, 1965, 8365, 8031,
+                     5689, 8065, 7001,  638, 8977, 1088, 3229, 1016,
+                     3777, 8135, 3689, 1993, 3635, 9776, 8967, 7039
+                     ), 3, 8, byrow=TRUE)
+  P4&lt;- matrix(x, nrow=3, ncol=3, byrow=TRUE)
+  d&lt;- B - P4 %*% X.right
+  # L2 norm for matrix
+  return( L2normForMatrix(d, scaling=1000) )
+}
+
+
+nloptr.options4&lt;- list(&quot;algorithm&quot;=&quot;NLOPT_GN_ISRES&quot;, &quot;xtol_rel&quot;=1.0e-6, &quot;print_level&quot;=0, &quot;maxeval&quot;=300000, &quot;population&quot;=1000)
+
+Y4&lt;- nloptr(x0=rep(0.5,9), 
+            eval_f=objective4,
+            lb=rep(0,9), ub=rep(1,9),
+            opts=nloptr.options4
+          )
+          
+print(Y4)
+          
+cat(&quot;Y4 resulting estimates for $latex \mathbf{A}&amp;s=1$:\n&quot;)
+print(matrix(Y4$solution, 3, 3, byrow=TRUE))
+</code>
+
+The run results are:
+<code>
+Call:
+nloptr(x0 = rep(0.5, 9), eval_f = objective4, lb = rep(0, 9),     ub = rep(1, 9), opts = nloptr.options4)
+
+
+Minimization using NLopt version 2.4.2 
+
+NLopt solver status: 5 ( NLOPT_MAXEVAL_REACHED: Optimization stopped because maxeval (above) was reached. )
+
+Number of Iterations....: 300000 
+Termination conditions:  xtol_rel: 1e-06        maxeval: 3e+05 
+Number of inequality constraints:  0 
+Number of equality constraints:    0 
+Current value of objective function:  0.0013835300300619 
+Current value of controls: 0.66308125177 0.13825982301 0.93439957114 0.92775614187 0.63095968859 0.70967190127 0.3338899268 0.47841968691 0.79082981177
+
+
+Y4 resulting estimates for mathbf{A}:
+              [,1]          [,2]          [,3]
+[1,] 0.66308125177 0.13825982301 0.93439957114
+[2,] 0.92775614187 0.63095968859 0.70967190127
+[3,] 0.33388992680 0.47841968691 0.79082981177
+</code>
+
+In fact, the held back version of $latex \mathbf{A}&amp;s=2$ used to generate these test data sets was:
+
+$latex (25)\,\,\,\mathbf{A} = \left[\begin{array}{ccc} 0.663 &amp; 0.138 &amp; 0.934 \\
+                                                       0.928 &amp; 0.631 &amp; 0.710 \\
+                                                       0.334 &amp; 0.478 &amp; 0.791
+\end{array} \right] &amp;s=2$
+
+and that matches the result rather well. So, in a sense, the algorithm has ``learned'' $latex \mathbf{A}&amp;s=2$ from the 8 data pairs presented.
+
+<hr>
+<h3><em>Miscellaneous notes</em></h3>
+
+
+<h5>All the runs of <b><font size="+1"><font face="consolas">nloptr</font></font></b> here were done with the following settings. The <a href="https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#isres-improved-stochastic-ranking-evolution-strategy">algorithm is always <em>ISRES</em></a>. The parameters <font face="consolas">xrel_tol = 1.0e-4</font> and <font face="consolas">population = 1000</font>. <font face="consolas">maxeval</font>, the number of iterations, varied depending upon the problem. For <font face="consolas">Y1</font>, <font face="consolas">Y2</font>, <font face="consolas">Y3</font>, and <font face="consolas">Y4</font> it was 100000, 100000, 100000, and 300000, respectively In all instances, the appropriate optimization controls are given by the <font face="consolas">nloptr.options</font><em>n</em> variable, where $latex n \in \{1,2,3,4\}&amp;s=1$.
+
+Per <a href="https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#isres-improved-stochastic-ranking-evolution-strategy">the description</a>, <em>ISRES</em>, which is an acronym for <em>Improved Stochastic Ranking Evolution Strategy</em>: 
+<blockquote>The evolution strategy is based on a combination of a mutation rule (with a log-normal step-size update and exponential smoothing) and differential variation (a <a href="https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method">Nelder-Mead-like update rule</a>). The fitness ranking is simply via the objective function for problems without nonlinear constraints, but when nonlinear constraints are included the stochastic ranking proposed by Runarsson and Yao is employed. The population size for <em>ISRES</em> defaults to 20×(n+1) in n dimensions, but this can be changed with the <font face="consolas">nlopt_set_population</font> function.
+
+This method supports arbitrary nonlinear inequality and equality constraints in addition to the bound constraints, and is specified within <em>NLopt</em> as <font face="consolas">NLOPT_GN_ISRES</font>.</blockquote>
+
+Further notes are available in:
+
+<ul>
+<li>T. P. Runarsson, X. Yao, ``Search biases in constrained evolutionary optimization," <em>IEEE Transactions on Systems, Man, and Cybernetics</em>, Part C: <em>Applications and Reviews</em>, 205, 35(2), 233-243.</li>
+<li>T. P. Runarsson, X. Yao, ``Stochastic ranking for constrained evolutionary optimization,'' <em>IEEE Transactions on Evolutionary Computation</em>, 2000, 4(3), 284-294.</li>
+</ul>
+</h5>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
