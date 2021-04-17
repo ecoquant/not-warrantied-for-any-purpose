@@ -4,18 +4,8 @@
 
 * Collection of source code mostly written by Jan Galkowski, but occasional scraps collected from elsewhere.
 * There is no particular organization to these files, with different pieces of code being in different subdirectories.
-* There will be an INDEX maintained below.
 * Some of this code appears in posts at:
 * [667-per-cm.net](https://667-per-cm.net), my blog
-
-### INDEX ###
-
-* (root) README : this file
-* (directory) intraday : Code and data related to the blog post titled [What are the odds of net zero?]()
-
-### Contribution guidelines ###
-
-* No contributions presently accepted.
 
 ### Who do I talk to? ###
 
