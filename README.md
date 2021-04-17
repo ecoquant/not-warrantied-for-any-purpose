@@ -11,5 +11,5 @@
 
 * Jan Galkowski, bayesianlogic.1@gmail.com, 
 * [https://667-per-cm.net/about](https://667-per-cm.net/about)
-* [https://www.linkedin.com/in/deepdevelopment/](https://www.linkedin.com/in/deepdevelopment/)
+
 
